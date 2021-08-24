@@ -34,6 +34,9 @@ type Options struct {
 	// ValidateUnknownMigrations will cause migrate to fail if there's unknown migration
 	// IDs in the database
 	ValidateUnknownMigrations bool
+	// AutomaticRollback will automatically run rollback methods if provided
+	// and if migrate function failed
+	AutomaticRollback bool
 }
 
 // Migration represents a database migration (a modification to be made on the database).
@@ -376,6 +379,12 @@ func (g *Gormigrate) runMigration(migration *Migration) error {
 	}
 	if !migrationRan {
 		if err := migration.Migrate(g.tx); err != nil {
+			if g.options.AutomaticRollback && migration.Rollback != nil {
+				if err2 := migration.Rollback(g.tx); err2 != nil {
+					return err
+				}
+			}
+
 			return err
 		}
 
