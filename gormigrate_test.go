@@ -365,6 +365,66 @@ func TestMigration_WithUseTransactionsShouldRollback(t *testing.T) {
 	}, "postgres", "sqlite3", "mssql")
 }
 
+func TestMigration_WithAutomaticRollbackShouldRollback1(t *testing.T) {
+	options := DefaultOptions
+	options.AutomaticRollback = true
+
+	forEachDatabase(t, func(db *gorm.DB) {
+		assert.True(t, true)
+		m := New(db, options, []*Migration{
+			{
+				ID: "201904231300",
+				Migrate: func(tx *gorm.DB) error {
+					if err := tx.Migrator().CreateTable(&Pet{}); err != nil {
+						return err
+					}
+
+					return errors.New("this transaction should be rolled back")
+				},
+				Rollback: func(tx *gorm.DB) error {
+					return tx.Migrator().DropTable(&Pet{})
+				},
+			},
+		})
+
+		// Migration should return an error and not leave around a Pet table
+		err := m.Migrate()
+		assert.Error(t, err)
+		assert.False(t, db.Migrator().HasTable(&Pet{}))
+	})
+}
+
+func TestMigration_WithoutAutomaticRollbackShouldNotRollback(t *testing.T) {
+	type Car struct {
+		gorm.Model
+	}
+	forEachDatabase(t, func(db *gorm.DB) {
+		m := New(db, DefaultOptions, []*Migration{
+			{
+				ID: "2019042313001",
+				Migrate: func(tx *gorm.DB) error {
+					if err := tx.AutoMigrate(&Car{}); err != nil {
+						return err
+					}
+
+					return errors.New("error")
+					return nil
+				},
+				Rollback: func(tx *gorm.DB) error {
+					return errors.New("shouldn't be called")
+				},
+			},
+		})
+
+		// Migration should return an error and not leave around a Pet table
+		err := m.Migrate()
+		pp := db.Migrator().HasTable(&Car{})
+		fmt.Println(pp)
+		assert.True(t, db.Migrator().HasTable(&Car{}))
+		assert.Error(t, err)
+	})
+}
+
 func TestUnexpectedMigrationEnabled(t *testing.T) {
 	forEachDatabase(t, func(db *gorm.DB) {
 		options := DefaultOptions
@@ -414,11 +474,21 @@ func forEachDatabase(t *testing.T, fn func(database *gorm.DB), dialects ...strin
 
 		// Ensure defers are not stacked up for each DB
 		func() {
-			db, err := gorm.Open(database.driver, &gorm.Config{})
+			db, err := gorm.Open(database.driver, &gorm.Config{
+				// Logger: logger.New(
+				// 	log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer
+				// 	logger.Config{
+				// 		SlowThreshold:             time.Second, // Slow SQL threshold
+				// 		LogLevel:                  logger.Info, // Log level
+				// 		IgnoreRecordNotFoundError: true,        // Ignore ErrRecordNotFound error for logger
+				// 		Colorful:                  false,       // Disable color
+				// 	},
+				// ),
+			})
 			require.NoError(t, err, "Could not connect to database %s, %v", database.dialect, err)
 
 			// ensure tables do not exists
-			assert.NoError(t, db.Migrator().DropTable("migrations", "people", "pets"))
+			assert.NoError(t, db.Migrator().DropTable("migrations", "cars", "people", "pets", "books"))
 
 			fn(db)
 		}()
