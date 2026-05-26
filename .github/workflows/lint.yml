@@ -12,19 +12,19 @@ jobs:
   lint:
     strategy:
       matrix:
-        go: ['1.25', '1.24', '1.23', '1.22', '1.21', '1.20', '1.19', '1.18']
+        go: ['1.26', '1.25', '1.24', '1.23', '1.22', '1.21', '1.20', '1.19', '1.18']
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
 
       - name: Lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           args: --skip-dirs=integration-test
