@@ -1,7 +1,7 @@
 services:
   postgres:
     # see https://www.postgresql.org/docs/release/
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     ports:
       - 5432:5432
     environment:
@@ -15,7 +15,7 @@ services:
       retries: 10
 
   mysql:
-    # see https://dev.mysql.com/doc/refman/9.2/en/mysql-releases.html
+    # see https://dev.mysql.com/doc/refman/9.7/en/mysql-releases.html
     image: mysql:9
     ports:
       - 3306:3306
@@ -31,8 +31,8 @@ services:
       retries: 10
 
   mariadb:
-    # see https://mariadb.com/kb/en/mariadb-server-release-dates/
-    image: mariadb:11
+    # see https://mariadb.com/docs/release-notes/community-server
+    image: mariadb:12
     ports:
       - 3307:3306
     environment:
@@ -48,7 +48,7 @@ services:
 
   sqlserver:
     # see https://hub.docker.com/r/microsoft/mssql-server
-    image: mcr.microsoft.com/mssql/server:2022-CU17-ubuntu-22.04
+    image: mcr.microsoft.com/mssql/server:2025-latest
     ports:
       - 1433:1433
     environment:
